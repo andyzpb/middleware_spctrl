@@ -35,6 +35,13 @@ class FakeAgent:
             "base": EMSample("base", "base", 11, 10.0, True, tf(1.0, 1.0, 1.0)),
         }
 
+    def scan_indices(self, max_index):
+        self.calls.append(("scan_indices", max_index))
+        return [
+            EMSample("scan", "index_0", 0, 10.0, True, tf(4.0, 5.0, 6.0)),
+            EMSample("scan", "index_1", 1, 10.0, False, None, error="invalid transform"),
+        ]
+
 
 class EMCliTests(unittest.TestCase):
     def setUp(self):
@@ -43,7 +50,7 @@ class EMCliTests(unittest.TestCase):
     def test_parser_exposes_em_debug_commands(self):
         commands = build_parser()._subparsers._group_actions[0].choices
 
-        self.assertEqual(set(commands), {"status", "read", "pair"})
+        self.assertEqual(set(commands), {"status", "read", "pair", "scan"})
 
     def test_status_prints_config_without_opening_tracker(self):
         stdout = io.StringIO()
@@ -85,6 +92,27 @@ class EMCliTests(unittest.TestCase):
 
         self.assertEqual(code, 2)
         self.assertIn("missing base", stderr.getvalue())
+
+    def test_scan_prints_raw_indices(self):
+        stdout = io.StringIO()
+
+        with redirect_stdout(stdout):
+            code = main(["--config", "config/em.yaml", "scan", "--max-index", "1"], agent_factory=FakeAgent)
+
+        self.assertEqual(code, 0)
+        self.assertEqual(FakeAgent.calls, [("start",), ("scan_indices", 1), ("close",)])
+        self.assertIn("index=0 valid=1 x_mm=4.000", stdout.getvalue())
+        self.assertIn("index=1 valid=0 error=invalid transform", stdout.getvalue())
+
+    def test_scan_rejects_negative_max_index_before_opening_tracker(self):
+        stderr = io.StringIO()
+
+        with redirect_stderr(stderr):
+            code = main(["--config", "config/em.yaml", "scan", "--max-index", "-1"], agent_factory=FakeAgent)
+
+        self.assertEqual(code, 2)
+        self.assertEqual(FakeAgent.calls, [])
+        self.assertIn("max-index must be >= 0", stderr.getvalue())
 
 
 if __name__ == "__main__":

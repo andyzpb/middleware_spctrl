@@ -19,6 +19,9 @@ def build_parser() -> argparse.ArgumentParser:
     read.add_argument("--samples", type=int, default=1)
     pair = subparsers.add_parser("pair")
     pair.add_argument("--samples", type=int, default=1)
+    scan = subparsers.add_parser("scan")
+    scan.add_argument("--max-index", type=int, default=16)
+    scan.add_argument("--samples", type=int, default=1)
     return parser
 
 
@@ -33,8 +36,10 @@ def main(argv: list[str] | None = None, config_loader=load_em_config, agent_fact
             _print_config(config)
             return 0
 
-        if args.samples < 1:
+        if hasattr(args, "samples") and args.samples < 1:
             raise EMError("samples must be >= 1")
+        if args.command == "scan" and args.max_index < 0:
+            raise EMError("max-index must be >= 0")
         if args.command == "pair":
             config.sensor_by_role("tip")
             config.sensor_by_role("base")
@@ -42,10 +47,11 @@ def main(argv: list[str] | None = None, config_loader=load_em_config, agent_fact
         agent = agent_factory(config)
         agent.start()
         for _ in range(args.samples):
-            samples = agent.read_samples()
             if args.command == "read":
+                samples = agent.read_samples()
                 _print_samples(samples)
             elif args.command == "pair":
+                samples = agent.read_samples()
                 pair = fresh_samples(samples, ("tip", "base"), time.monotonic(), config.timeout_s)
                 rel = relative_transform(pair["base"], pair["tip"])
                 print(
@@ -58,6 +64,8 @@ def main(argv: list[str] | None = None, config_loader=load_em_config, agent_fact
                         ]
                     )
                 )
+            elif args.command == "scan":
+                _print_scan_rows(agent.scan_indices(args.max_index))
             else:
                 parser.error(f"unknown command {args.command}")
         return 0
@@ -106,6 +114,25 @@ def _print_samples(samples: dict[str, EMSample]) -> None:
                     f"role={sample.role}",
                     f"name={sample.name}",
                     f"tool_index={sample.tool_index}",
+                    "valid=1",
+                    f"x_mm={x:.3f}",
+                    f"y_mm={y:.3f}",
+                    f"z_mm={z:.3f}",
+                ]
+            )
+        )
+
+
+def _print_scan_rows(rows: list[EMSample]) -> None:
+    for sample in rows:
+        if not sample.valid:
+            print(f"index={sample.tool_index} valid=0 error={sample.error or 'invalid'}")
+            continue
+        x, y, z = sample.position_mm
+        print(
+            " ".join(
+                [
+                    f"index={sample.tool_index}",
                     "valid=1",
                     f"x_mm={x:.3f}",
                     f"y_mm={y:.3f}",

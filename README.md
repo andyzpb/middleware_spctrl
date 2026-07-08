@@ -104,12 +104,16 @@ assumption. If NDI returns a different order, edit `config/em.yaml`.
 
 ```bash
 python -m continuum_control.em_cli --config config/em.yaml status
+python -m continuum_control.em_cli --config config/em.yaml scan --max-index 16
 python -m continuum_control.em_cli --config config/em.yaml read --samples 1
 python -m continuum_control.em_cli --config config/em.yaml pair --samples 1
 ```
 
-`read` allows tip-only smoke testing. `pair` requires live `tip` and `base`
-roles and prints the tip position in the base sensor frame.
+Use `scan` before the sensor roles are known. It prints raw Aurora tracking
+indices, for example `index=0 valid=1 x_mm=...`; move one physical sensor at a
+time and assign the moving index to `tip`, `base`, or `aux` in `config/em.yaml`.
+`read` checks the configured roles. `pair` requires live `tip` and `base` roles
+and prints the tip position in the base sensor frame.
 
 ## Safety Behavior
 

@@ -53,15 +53,7 @@ class AuroraAgent:
         self.tracker.close()
 
     def read_samples(self) -> dict[str, EMSample]:
-        try:
-            _, _, _, tracking, quality = self.tracker.get_frame()
-        except (TypeError, ValueError) as exc:
-            raise AuroraError("NDITracker.get_frame returned an unexpected frame") from exc
-
-        if tracking is None:
-            raise AuroraError("NDITracker.get_frame returned no tracking list")
-
-        now_s = float(self.clock())
+        tracking, quality, now_s = self._read_frame()
         samples: dict[str, EMSample] = {}
         for sensor in self.config.sensors:
             raw_transform = _index(tracking, sensor.tool_index, missing=_MISSING)
@@ -107,6 +99,48 @@ class AuroraAgent:
                     f"invalid transform: {exc}",
                 )
         return samples
+
+    def scan_indices(self, max_index: int) -> list[EMSample]:
+        if max_index < 0:
+            raise AuroraError("max_index must be >= 0")
+        tracking, quality, now_s = self._read_frame()
+        rows = []
+        for index in range(max_index + 1):
+            raw_transform = _index(tracking, index, missing=_MISSING)
+            sample_quality = _optional_number(_index(quality, index, None))
+            if raw_transform is _MISSING:
+                rows.append(EMSample("scan", f"index_{index}", index, now_s, False, None, sample_quality, "missing"))
+            elif raw_transform is None:
+                rows.append(
+                    EMSample("scan", f"index_{index}", index, now_s, False, None, sample_quality, "invalid transform")
+                )
+            else:
+                try:
+                    rows.append(EMSample("scan", f"index_{index}", index, now_s, True, raw_transform, sample_quality))
+                except EMError as exc:
+                    rows.append(
+                        EMSample(
+                            "scan",
+                            f"index_{index}",
+                            index,
+                            now_s,
+                            False,
+                            None,
+                            sample_quality,
+                            f"invalid transform: {exc}",
+                        )
+                    )
+        return rows
+
+    def _read_frame(self):
+        try:
+            _, _, _, tracking, quality = self.tracker.get_frame()
+        except (TypeError, ValueError) as exc:
+            raise AuroraError("NDITracker.get_frame returned an unexpected frame") from exc
+
+        if tracking is None:
+            raise AuroraError("NDITracker.get_frame returned no tracking list")
+        return tracking, quality, float(self.clock())
 
 
 def _index(values: Any, index: int, missing: Any) -> Any:

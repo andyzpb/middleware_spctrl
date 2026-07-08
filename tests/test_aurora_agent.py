@@ -92,6 +92,24 @@ class AuroraAgentTests(unittest.TestCase):
         self.assertFalse(tracker.stopped)
         self.assertTrue(tracker.closed)
 
+    def test_scan_indices_reads_raw_tracking_slots(self):
+        cfg = EMConfig(
+            serial_port="auto",
+            ports_to_probe=20,
+            timeout_s=0.5,
+            sample_hz=40.0,
+            sensors=(SensorConfig("tip", "tip", 10),),
+        )
+        tracker = FakeTracker()
+
+        rows = AuroraAgent(cfg, tracker=tracker, clock=lambda: 100.0).scan_indices(10)
+
+        self.assertEqual(rows[0].tool_index, 0)
+        self.assertFalse(rows[0].valid)
+        self.assertEqual(rows[1].tool_index, 1)
+        self.assertFalse(rows[1].valid)
+        self.assertEqual(rows[10].position_mm, (1.0, 2.0, 3.0))
+
 
 if __name__ == "__main__":
     unittest.main()

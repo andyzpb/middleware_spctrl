@@ -3,9 +3,9 @@
 Cross-platform control middleware for a continuum robot driven by three
 DYNAMIXEL XL430-W250 actuators through a ROBOTIS U2D2.
 
-The first implementation slice is a native Python hardware-control path that
-works on macOS, Linux, and Windows. ROS2/EM PID integration will sit on top of
-the same safety core later.
+The middleware is native Python and keeps the same command surface on macOS,
+Linux, and Windows. ROS2 and EM PID can sit on top of the same safety core
+later.
 
 ## Motor Contract
 
@@ -35,9 +35,13 @@ continuum_control/
   serial_ports.py  cross-platform U2D2 port discovery
   dxl_agent.py     only layer allowed to use dynamixel_sdk
   cli.py           continuumctl command-line interface
+  em_core.py       EM sample validation and relative pose math
+  aurora_agent.py  only layer allowed to use sksurgery NDITracker
+  em_cli.py        emctl command-line interface
 
 config/
   robot.yaml       shared hardware contract
+  em.yaml          Aurora sensor-role mapping
 
 tests/
   test_*.py        runtime-independent self-checks
@@ -52,7 +56,7 @@ python -m pip install -r requirements-control.txt
 U2D2 does not power the motors. Use an external DYNAMIXEL-compatible power
 supply before running hardware commands.
 
-## CLI
+## Motor CLI
 
 Use `--port auto` for automatic U2D2 discovery, or pass an explicit port:
 
@@ -71,6 +75,41 @@ python -m continuum_control.cli --config config/robot.yaml --port auto disarm
 For safety, `home` and `jog` run the arming validation first. If ID018 is not in
 Position Control Mode, its limits cannot be set, or its present position is
 outside `1195..1877`, the command fails before motion.
+
+## Aurora EM CLI
+
+EM sensors are role-based. The code reads roles such as `tip`, `base`, and
+`aux`; `config/em.yaml` maps those roles to the current NDI tool indices.
+
+```yaml
+sensors:
+  - name: tip
+    role: tip
+    tool_index: 10
+  - name: base
+    role: base
+    tool_index: 11
+```
+
+When a third sensor is installed, add it as `aux`:
+
+```yaml
+  - name: aux
+    role: aux
+    tool_index: 12
+```
+
+The default `10/11` values are lab configuration, not a hard-coded
+assumption. If NDI returns a different order, edit `config/em.yaml`.
+
+```bash
+python -m continuum_control.em_cli --config config/em.yaml status
+python -m continuum_control.em_cli --config config/em.yaml read --samples 1
+python -m continuum_control.em_cli --config config/em.yaml pair --samples 1
+```
+
+`read` allows tip-only smoke testing. `pair` requires live `tip` and `base`
+roles and prints the tip position in the base sensor frame.
 
 ## Safety Behavior
 
@@ -97,6 +136,9 @@ Current coverage checks:
 - ambiguous serial-port discovery fails
 - ID018 mode, min/max limits, and present-position checks happen before torque on
 - CLI command names are consistent across platforms
+- EM config rejects unknown roles, duplicate tool indices, and more than three
+  sensors
+- EM relative pose math is tested without Aurora hardware
 
 ## Recommended Hardware Commissioning
 

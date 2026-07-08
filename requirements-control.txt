@@ -1,3 +1,4 @@
 PyYAML
 dynamixel-sdk
 pyserial
+scikit-surgerynditracker

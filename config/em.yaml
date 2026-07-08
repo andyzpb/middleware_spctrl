@@ -1,0 +1,11 @@
+serial_port: auto
+ports_to_probe: 20
+timeout_s: 0.5
+sample_hz: 40.0
+sensors:
+  - name: tip
+    role: tip
+    tool_index: 10
+  - name: base
+    role: base
+    tool_index: 11

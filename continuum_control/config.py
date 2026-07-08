@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+import math
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +13,29 @@ class ConfigError(ValueError):
 
 
 REQUIRED_ROLES = ("translation", "rotation", "bending")
+EM_SENSOR_ROLES = ("tip", "base", "aux")
+
+
+@dataclass(frozen=True)
+class SensorConfig:
+    name: str
+    role: str
+    tool_index: int
+
+
+@dataclass(frozen=True)
+class EMConfig:
+    serial_port: str
+    ports_to_probe: int
+    timeout_s: float
+    sample_hz: float
+    sensors: tuple[SensorConfig, ...]
+
+    def sensor_by_role(self, role: str) -> SensorConfig:
+        for sensor in self.sensors:
+            if sensor.role == role:
+                return sensor
+        raise ConfigError(f"missing {role}")
 
 
 def _require_mapping(data: Any, name: str) -> dict[str, Any]:
@@ -28,6 +53,24 @@ def _require_int(data: dict[str, Any], key: str, context: str) -> int:
     return value
 
 
+def _require_str(data: dict[str, Any], key: str, context: str) -> str:
+    if key not in data:
+        raise ConfigError(f"{context} missing {key}")
+    value = data[key]
+    if not isinstance(value, str) or not value:
+        raise ConfigError(f"{context}.{key} must be a non-empty string")
+    return value
+
+
+def _optional_int(data: dict[str, Any], key: str, context: str, default: int) -> int:
+    if key not in data:
+        return default
+    value = data[key]
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ConfigError(f"{context}.{key} must be an integer")
+    return value
+
+
 def _optional_float(data: dict[str, Any], key: str, context: str) -> float | None:
     if key not in data:
         return None
@@ -35,6 +78,11 @@ def _optional_float(data: dict[str, Any], key: str, context: str) -> float | Non
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ConfigError(f"{context}.{key} must be a number")
     return float(value)
+
+
+def _optional_number(data: dict[str, Any], key: str, context: str, default: float) -> float:
+    value = _optional_float(data, key, context)
+    return default if value is None else value
 
 
 def _axis_from_mapping(role: str, data: Any) -> AxisConfig:
@@ -106,4 +154,62 @@ def load_robot_config(path: str | Path) -> RobotConfig:
         baudrate=baudrate,
         axes=axes,
         bus_watchdog=bus_watchdog,
+    )
+
+
+def _sensor_from_mapping(data: Any, index: int) -> SensorConfig:
+    values = _require_mapping(data, f"sensors[{index}]")
+    sensor = SensorConfig(
+        name=_require_str(values, "name", f"sensors[{index}]"),
+        role=_require_str(values, "role", f"sensors[{index}]"),
+        tool_index=_require_int(values, "tool_index", f"sensors[{index}]"),
+    )
+    if sensor.tool_index < 0:
+        raise ConfigError(f"sensors[{index}].tool_index must be >= 0")
+    if sensor.role not in EM_SENSOR_ROLES:
+        raise ConfigError(f"sensors[{index}].role must be one of {', '.join(EM_SENSOR_ROLES)}")
+    return sensor
+
+
+def load_em_config(path: str | Path) -> EMConfig:
+    data = _load_yaml(Path(path))
+    serial_port = data.get("serial_port", "auto")
+    if not isinstance(serial_port, str) or not serial_port:
+        raise ConfigError("serial_port must be a non-empty string")
+
+    ports_to_probe = _optional_int(data, "ports_to_probe", str(path), 20)
+    if ports_to_probe <= 0:
+        raise ConfigError("ports_to_probe must be > 0")
+
+    timeout_s = _optional_number(data, "timeout_s", str(path), 0.5)
+    if not math.isfinite(timeout_s) or timeout_s <= 0.0:
+        raise ConfigError("timeout_s must be > 0")
+
+    sample_hz = _optional_number(data, "sample_hz", str(path), 40.0)
+    if not math.isfinite(sample_hz) or sample_hz <= 0.0:
+        raise ConfigError("sample_hz must be > 0")
+
+    raw_sensors = data.get("sensors")
+    if not isinstance(raw_sensors, list) or not raw_sensors:
+        raise ConfigError("sensors must be a non-empty list")
+    if len(raw_sensors) > 3:
+        raise ConfigError("sensors supports at most 3 entries")
+
+    sensors = tuple(_sensor_from_mapping(sensor, i) for i, sensor in enumerate(raw_sensors))
+    names = [sensor.name for sensor in sensors]
+    roles = [sensor.role for sensor in sensors]
+    tool_indices = [sensor.tool_index for sensor in sensors]
+    if len(set(names)) != len(names):
+        raise ConfigError(f"sensor names must be unique: {names}")
+    if len(set(roles)) != len(roles):
+        raise ConfigError(f"sensor roles must be unique: {roles}")
+    if len(set(tool_indices)) != len(tool_indices):
+        raise ConfigError(f"sensor tool_index values must be unique: {tool_indices}")
+
+    return EMConfig(
+        serial_port=serial_port,
+        ports_to_probe=ports_to_probe,
+        timeout_s=timeout_s,
+        sample_hz=sample_hz,
+        sensors=sensors,
     )

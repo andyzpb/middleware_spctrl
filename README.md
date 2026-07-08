@@ -13,18 +13,18 @@ later.
 |---|---:|---|---|
 | translation | 8 | Position mode by default | raw tick for now |
 | rotation | 12 | Position mode by default | raw tick for now |
-| bending | 18 | Position Control Mode only | -20 to +20 continuum deg |
+| bending | 18 | Position Control Mode only | -25 to +25 deg from home |
 
 ID018 bending is the protected axis:
 
 - Operating Mode(11): `3`
-- Home tick: `1536`
-- Min Position Limit(52): `1195`
-- Max Position Limit(48): `1877`
-- Logical range: `-20..+20` continuum degrees
+- Home tick: `1652`
+- Min Position Limit(52): `1368`
+- Max Position Limit(48): `1936`
+- Logical range: `-25..+25` degrees from home
 
-The tick range is the authority. The logical bend angle is a robot calibration,
-not the XL430 horn angle.
+The tick range is the authority. The logical bend angle is measured relative to
+the current ID018 home position.
 
 ## Layout
 
@@ -75,7 +75,7 @@ python -m continuum_control.cli --config config/robot.yaml --port auto disarm
 
 For safety, `home` and `jog` run the arming validation first. If ID018 is not in
 Position Control Mode, its limits cannot be set, or its present position is
-outside `1195..1877`, the command fails before motion.
+outside `1368..1936`, the command fails before motion.
 
 ## Aurora EM CLI
 
@@ -132,7 +132,7 @@ python -m continuum_control.calibrate_em \
 ```
 
 On completion or EM abort, the sweep returns ID012 and ID018 to home. ID018 is
-left torque-enabled at `1536` so the structure does not relax away from center.
+left torque-enabled at `1652` so the structure does not relax away from center.
 
 ## Safety Behavior
 
@@ -154,7 +154,7 @@ python -m py_compile continuum_control/*.py
 
 Current coverage checks:
 
-- ID018 bend mapping: `-20 -> 1195`, `0 -> 1536`, `20 -> 1877`
+- ID018 bend mapping: `-25 -> 1368`, `0 -> 1652`, `25 -> 1936`
 - unsafe operator jog is rejected before loading hardware
 - ambiguous serial-port discovery fails
 - ID018 mode, min/max limits, and present-position checks happen before torque on
@@ -168,7 +168,7 @@ Current coverage checks:
 1. Connect only ID018 first.
 2. Confirm external power and U2D2 wiring.
 3. Run `status` with an explicit port.
-4. Run `arm`; verify mode `3`, limits `1195..1877`, and no hardware error.
+4. Run `arm`; verify mode `3`, limits `1368..1936`, and no hardware error.
 5. Run a small bending jog, for example `--bending-deg 2`.
 6. Run `home`.
 7. Add ID008 and ID012 after ID018 is proven safe.

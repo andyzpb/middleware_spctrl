@@ -21,10 +21,10 @@ motors:
   bending:
     id: 18
     required_mode: 3
-    home_tick: 1536
-    min_tick: 1195
-    max_tick: 1877
-    logical_min_deg: -20.0
-    logical_max_deg: 20.0
+    home_tick: 1652
+    min_tick: 1368
+    max_tick: 1936
+    logical_min_deg: -25.0
+    logical_max_deg: 25.0
     profile_velocity: 13
     profile_acceleration: 6

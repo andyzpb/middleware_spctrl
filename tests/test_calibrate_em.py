@@ -38,7 +38,7 @@ class FakeBackend:
         self.opened = False
         self.closed = False
         self.writes = []
-        self.positions = {12: 2048, 18: 1536}
+        self.positions = {12: 2048, 18: 1652}
         self.modes = {12: 3, 18: 3}
 
     def open(self):
@@ -214,7 +214,7 @@ class CalibrationTests(unittest.TestCase):
         goal_writes = [write for write in backend.writes if write[1] == ADDR_GOAL_POSITION]
         self.assertEqual(torque_off_writes, [])
         self.assertIn((12, ADDR_GOAL_POSITION, 2048), goal_writes)
-        self.assertIn((18, ADDR_GOAL_POSITION, 1536), goal_writes)
+        self.assertIn((18, ADDR_GOAL_POSITION, 1652), goal_writes)
 
     def test_validation_failure_does_not_command_motors(self):
         robot_config = load_robot_config("config/robot.yaml")

@@ -83,13 +83,13 @@ class CliTests(unittest.TestCase):
 
         with redirect_stderr(stderr):
             code = main(
-                ["--config", "config/robot.yaml", "--port", "COM7", "jog", "--bending-deg", "25"],
+                ["--config", "config/robot.yaml", "--port", "COM7", "jog", "--bending-deg", "25.1"],
                 agent_factory=FakeAgent,
             )
 
         self.assertEqual(code, 2)
         self.assertEqual(FakeAgent.calls, [])
-        self.assertIn("bending_deg 25.0 outside", stderr.getvalue())
+        self.assertIn("bending_deg 25.1 outside", stderr.getvalue())
 
 
 if __name__ == "__main__":

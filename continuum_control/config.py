@@ -144,10 +144,10 @@ def load_robot_config(path: str | Path) -> RobotConfig:
     bending = axes["bending"]
     if bending.required_mode != 3:
         raise ConfigError("bending.required_mode must be 3")
-    if (bending.min_tick, bending.home_tick, bending.max_tick) != (1195, 1536, 1877):
-        raise ConfigError("bending ticks must be min=1195, home=1536, max=1877")
-    if (bending.logical_min_deg, bending.logical_max_deg) != (-20.0, 20.0):
-        raise ConfigError("bending logical range must be -20.0..20.0")
+    if (bending.min_tick, bending.home_tick, bending.max_tick) != (1368, 1652, 1936):
+        raise ConfigError("bending ticks must be min=1368, home=1652, max=1936")
+    if (bending.logical_min_deg, bending.logical_max_deg) != (-25.0, 25.0):
+        raise ConfigError("bending logical range must be -25.0..25.0")
 
     return RobotConfig(
         serial_port=serial_port,

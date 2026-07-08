@@ -28,7 +28,7 @@ class FakeBackend:
             self.registers[(dxl_id, 132)] = 2048
             self.registers[(dxl_id, 144)] = 111
             self.registers[(dxl_id, 146)] = 25
-        self.registers[(18, 132)] = 1536
+        self.registers[(18, 132)] = 1652
 
     def open(self):
         self.writes.append(("open",))
@@ -70,8 +70,8 @@ class DxlAgentTests(unittest.TestCase):
 
         self.assertIn((18, ADDR_TORQUE_ENABLE, 0), backend.writes)
         self.assertIn((18, ADDR_OPERATING_MODE, 3), backend.writes)
-        self.assertIn((18, ADDR_MIN_POSITION_LIMIT, 1195), backend.writes)
-        self.assertIn((18, ADDR_MAX_POSITION_LIMIT, 1877), backend.writes)
+        self.assertIn((18, ADDR_MIN_POSITION_LIMIT, 1368), backend.writes)
+        self.assertIn((18, ADDR_MAX_POSITION_LIMIT, 1936), backend.writes)
         self.assertIn((18, ADDR_PROFILE_VELOCITY, 13), backend.writes)
         self.assertIn((18, ADDR_PROFILE_ACCELERATION, 6), backend.writes)
         self.assertIn((18, ADDR_BUS_WATCHDOG, 25), backend.writes)
@@ -125,16 +125,16 @@ class DxlAgentTests(unittest.TestCase):
 
         self.assertIn((8, ADDR_GOAL_POSITION, 2048), backend.writes)
         self.assertIn((12, ADDR_GOAL_POSITION, 2048), backend.writes)
-        self.assertIn((18, ADDR_GOAL_POSITION, 1536), backend.writes)
+        self.assertIn((18, ADDR_GOAL_POSITION, 1652), backend.writes)
 
     def test_jog_bending_uses_safety_gate(self):
         backend = FakeBackend()
         agent = DxlAgent(default_robot_config(), backend)
         agent.arm()
 
-        agent.jog_bending(20.0)
+        agent.jog_bending(25.0)
 
-        self.assertIn((18, ADDR_GOAL_POSITION, 1877), backend.writes)
+        self.assertIn((18, ADDR_GOAL_POSITION, 1936), backend.writes)
 
 
 if __name__ == "__main__":

@@ -13,8 +13,9 @@ class ConfigAndPortTests(unittest.TestCase):
         self.assertEqual(cfg.axes["rotation"].dxl_id, 12)
         self.assertEqual(cfg.bending.dxl_id, 18)
         self.assertEqual(cfg.bending.required_mode, 3)
-        self.assertEqual(cfg.bending.min_tick, 1195)
-        self.assertEqual(cfg.bending.max_tick, 1877)
+        self.assertEqual(cfg.bending.home_tick, 1652)
+        self.assertEqual(cfg.bending.min_tick, 1368)
+        self.assertEqual(cfg.bending.max_tick, 1936)
 
     def test_missing_config_fails(self):
         with self.assertRaises(ConfigError):

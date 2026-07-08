@@ -1,0 +1,30 @@
+serial_port: auto
+baudrate: 1000000
+bus_watchdog: 25
+motors:
+  translation:
+    id: 8
+    required_mode: 3
+    home_tick: 2048
+    min_tick: 0
+    max_tick: 4095
+    profile_velocity: 30
+    profile_acceleration: 10
+  rotation:
+    id: 12
+    required_mode: 3
+    home_tick: 2048
+    min_tick: 0
+    max_tick: 4095
+    profile_velocity: 22
+    profile_acceleration: 10
+  bending:
+    id: 18
+    required_mode: 3
+    home_tick: 1536
+    min_tick: 1195
+    max_tick: 1877
+    logical_min_deg: -20.0
+    logical_max_deg: 20.0
+    profile_velocity: 13
+    profile_acceleration: 6

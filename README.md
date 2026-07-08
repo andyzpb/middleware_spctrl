@@ -38,6 +38,7 @@ continuum_control/
   em_core.py       EM sample validation and relative pose math
   aurora_agent.py  only layer allowed to use sksurgery NDITracker
   em_cli.py        emctl command-line interface
+  calibrate_em.py  rotation/bending EM calibration sweep
 
 config/
   robot.yaml       shared hardware contract
@@ -85,10 +86,10 @@ EM sensors are role-based. The code reads roles such as `tip`, `base`, and
 sensors:
   - name: tip
     role: tip
-    tool_index: 10
+    tool_index: 1
   - name: base
     role: base
-    tool_index: 11
+    tool_index: 0
 ```
 
 When a third sensor is installed, add it as `aux`:
@@ -96,10 +97,10 @@ When a third sensor is installed, add it as `aux`:
 ```yaml
   - name: aux
     role: aux
-    tool_index: 12
+    tool_index: 2
 ```
 
-The default `10/11` values are lab configuration, not a hard-coded
+The default `1/0` values are the current lab configuration, not a hard-coded
 assumption. If NDI returns a different order, edit `config/em.yaml`.
 
 ```bash
@@ -114,6 +115,24 @@ indices, for example `index=0 valid=1 x_mm=...`; move one physical sensor at a
 time and assign the moving index to `tip`, `base`, or `aux` in `config/em.yaml`.
 `read` checks the configured roles. `pair` requires live `tip` and `base` roles
 and prints the tip position in the base sensor frame.
+
+## Rotation/Bending EM Calibration
+
+The calibration sweep moves only ID012 rotation and ID018 bending. ID018 is
+validated as XL430-W250 in Position Control Mode before motion. The default grid
+is rotation offsets `-100, 0, +100` ticks and bending `-10, -5, 0, +5, +10`
+degrees, with one second settle and one second EM sampling at `sample_hz`.
+
+```bash
+python -m continuum_control.calibrate_em \
+  --robot-config config/robot.yaml \
+  --em-config config/em.yaml \
+  --motor-port /dev/cu.usbserial-FT4TFQFO \
+  --output em_rotation_bending_calibration.csv
+```
+
+On completion or EM abort, the sweep returns ID012 and ID018 to home. ID018 is
+left torque-enabled at `1536` so the structure does not relax away from center.
 
 ## Safety Behavior
 

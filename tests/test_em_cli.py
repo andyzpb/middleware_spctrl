@@ -1,4 +1,5 @@
 import io
+import time
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 
@@ -92,6 +93,35 @@ class EMCliTests(unittest.TestCase):
 
         self.assertEqual(code, 2)
         self.assertIn("missing base", stderr.getvalue())
+
+    def test_pair_continues_after_transient_invalid_sample(self):
+        class WarmupAgent(FakeAgent):
+            def __init__(self, config):
+                super().__init__(config)
+                self.count = 0
+
+            def read_samples(self):
+                self.calls.append(("read_samples",))
+                self.count += 1
+                now = time.monotonic()
+                if self.count == 1:
+                    return {
+                        "tip": EMSample("tip", "tip", 1, now, False, None, error="invalid transform"),
+                        "base": EMSample("base", "base", 0, now, True, tf(1.0, 1.0, 1.0)),
+                    }
+                return {
+                    "tip": EMSample("tip", "tip", 1, now, True, tf(2.0, 3.0, 4.0)),
+                    "base": EMSample("base", "base", 0, now, True, tf(1.0, 1.0, 1.0)),
+                }
+
+        stdout = io.StringIO()
+
+        with redirect_stdout(stdout):
+            code = main(["--config", "config/em.yaml", "pair", "--samples", "2"], agent_factory=WarmupAgent)
+
+        self.assertEqual(code, 0)
+        self.assertIn("pair invalid: tip invalid: invalid transform", stdout.getvalue())
+        self.assertIn("tip_in_base x_mm=1.000 y_mm=2.000 z_mm=3.000", stdout.getvalue())
 
     def test_scan_prints_raw_indices(self):
         stdout = io.StringIO()

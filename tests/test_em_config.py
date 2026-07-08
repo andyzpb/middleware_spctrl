@@ -10,10 +10,10 @@ class EMConfigTests(unittest.TestCase):
     def test_load_default_em_config(self):
         cfg = load_em_config("config/em.yaml")
 
-        self.assertEqual(cfg.serial_port, "auto")
+        self.assertEqual(cfg.serial_port, "/dev/cu.usbserial-1310")
         self.assertEqual(len(cfg.sensors), 2)
-        self.assertEqual(cfg.sensor_by_role("tip").tool_index, 10)
-        self.assertEqual(cfg.sensor_by_role("base").tool_index, 11)
+        self.assertEqual(cfg.sensor_by_role("tip").tool_index, 1)
+        self.assertEqual(cfg.sensor_by_role("base").tool_index, 0)
 
     def test_allows_aux_as_third_sensor(self):
         path = self._write(

@@ -1,11 +1,11 @@
-serial_port: auto
+serial_port: /dev/cu.usbserial-1310
 ports_to_probe: 20
 timeout_s: 0.5
 sample_hz: 40.0
 sensors:
   - name: tip
     role: tip
-    tool_index: 10
+    tool_index: 1
   - name: base
     role: base
-    tool_index: 11
+    tool_index: 0

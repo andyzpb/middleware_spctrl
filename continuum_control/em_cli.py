@@ -52,18 +52,21 @@ def main(argv: list[str] | None = None, config_loader=load_em_config, agent_fact
                 _print_samples(samples)
             elif args.command == "pair":
                 samples = agent.read_samples()
-                pair = fresh_samples(samples, ("tip", "base"), time.monotonic(), config.timeout_s)
-                rel = relative_transform(pair["base"], pair["tip"])
-                print(
-                    " ".join(
-                        [
-                            "tip_in_base",
-                            f"x_mm={rel[0][3]:.3f}",
-                            f"y_mm={rel[1][3]:.3f}",
-                            f"z_mm={rel[2][3]:.3f}",
-                        ]
+                try:
+                    pair = fresh_samples(samples, ("tip", "base"), time.monotonic(), config.timeout_s)
+                    rel = relative_transform(pair["base"], pair["tip"])
+                    print(
+                        " ".join(
+                            [
+                                "tip_in_base",
+                                f"x_mm={rel[0][3]:.3f}",
+                                f"y_mm={rel[1][3]:.3f}",
+                                f"z_mm={rel[2][3]:.3f}",
+                            ]
+                        )
                     )
-                )
+                except EMError as exc:
+                    print(f"pair invalid: {exc}")
             elif args.command == "scan":
                 _print_scan_rows(agent.scan_indices(args.max_index))
             else:
